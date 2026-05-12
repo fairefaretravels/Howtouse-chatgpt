@@ -1,0 +1,1601 @@
+import { useState, useEffect, useCallback } from "react";
+
+// ─── GLOBAL STYLES ────────────────────────────────────────────────────────────
+const STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=Nunito+Sans:wght@400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #faf8f3;
+    --white: #ffffff;
+    --green: #2b6350;
+    --green-light: #3a7d64;
+    --green-pale: #e8f4f0;
+    --amber: #d97706;
+    --amber-pale: #fef3c7;
+    --coral: #dc4f2b;
+    --coral-pale: #fef0ec;
+    --ink: #1c1917;
+    --ink-mid: #44403c;
+    --ink-muted: #78716c;
+    --border: #e5ddd5;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.06);
+    --shadow-md: 0 2px 8px rgba(0,0,0,.1), 0 8px 24px rgba(0,0,0,.08);
+    --radius: 12px;
+    --radius-lg: 18px;
+  }
+
+  body { font-family: 'Nunito Sans', sans-serif; background: var(--cream); color: var(--ink); }
+
+  .app { min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--green);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .logo-icon { font-size: 22px; }
+  .nav { display: flex; gap: 4px; flex: 1; }
+  .nav-btn {
+    background: none;
+    border: none;
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .nav-btn:hover { background: var(--cream); color: var(--ink); }
+  .nav-btn.active { background: var(--green-pale); color: var(--green); }
+  .header-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+  .admin-badge {
+    background: var(--amber-pale);
+    color: var(--amber);
+    border: 1px solid #fcd34d;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: .02em;
+  }
+  .btn-sm {
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--ink-mid); }
+  .btn-outline:hover { border-color: var(--green); color: var(--green); }
+  .btn-primary { background: var(--green); color: white; }
+  .btn-primary:hover { background: var(--green-light); }
+  .btn-coral { background: var(--coral); color: white; }
+  .btn-coral:hover { opacity: .9; }
+  .btn-amber { background: var(--amber); color: white; }
+
+  /* ── MAIN CONTENT ── */
+  .main { flex: 1; padding: 32px 24px; max-width: 960px; margin: 0 auto; width: 100%; }
+
+  /* ── HOME VIEW ── */
+  .hero {
+    background: linear-gradient(135deg, var(--green) 0%, #1e4d3c 100%);
+    border-radius: var(--radius-lg);
+    padding: 40px 44px;
+    color: white;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: '🤖';
+    position: absolute;
+    right: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 80px;
+    opacity: .25;
+  }
+  .hero-tag {
+    background: rgba(255,255,255,.15);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    display: inline-block;
+    margin-bottom: 14px;
+  }
+  .hero h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 10px;
+  }
+  .hero p { font-size: 15px; opacity: .85; max-width: 480px; margin-bottom: 24px; line-height: 1.6; }
+  .hero-actions { display: flex; gap: 10px; }
+  .hero-btn {
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 22px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .hero-btn-white { background: white; color: var(--green); }
+  .hero-btn-white:hover { background: #f0f0f0; }
+  .hero-btn-ghost { background: rgba(255,255,255,.15); color: white; border: 1.5px solid rgba(255,255,255,.3); }
+  .hero-btn-ghost:hover { background: rgba(255,255,255,.25); }
+
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stat-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    box-shadow: var(--shadow);
+  }
+  .stat-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); margin-bottom: 6px; }
+  .stat-value { font-family: 'Fraunces', serif; font-size: 30px; font-weight: 700; color: var(--green); }
+  .stat-sub { font-size: 13px; color: var(--ink-muted); margin-top: 2px; }
+  .progress-bar-wrap { height: 6px; background: var(--border); border-radius: 10px; margin-top: 10px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--green); border-radius: 10px; transition: width .5s ease; }
+
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .section-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--ink); }
+  .see-all { font-size: 13px; font-weight: 600; color: var(--green); background: none; border: none; cursor: pointer; }
+  .see-all:hover { text-decoration: underline; }
+
+  /* ── LESSON CARDS ── */
+  .lessons-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .lesson-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    cursor: pointer;
+    transition: all .2s;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  .lesson-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--green); }
+  .lesson-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+  .lesson-emoji { font-size: 28px; }
+  .lesson-category-tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 20px;
+  }
+  .cat-Basics { background: #dbeafe; color: #1d4ed8; }
+  .cat-Prompting { background: #f3e8ff; color: #7c3aed; }
+  .cat-Safety { background: #fee2e2; color: #b91c1c; }
+  .cat-Use\ Cases { background: #dcfce7; color: #15803d; }
+  .lesson-title { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 600; color: var(--ink); margin-bottom: 6px; line-height: 1.3; }
+  .lesson-desc { font-size: 13px; color: var(--ink-muted); line-height: 1.5; margin-bottom: 14px; }
+  .lesson-meta { display: flex; align-items: center; justify-content: space-between; }
+  .lesson-duration { font-size: 12px; color: var(--ink-muted); }
+  .lesson-status { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; }
+  .status-done { color: var(--green); }
+  .status-quiz { color: var(--amber); }
+
+  /* ── CATEGORY FILTER ── */
+  .cat-filter { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .cat-filter-btn {
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    color: var(--ink-mid);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .cat-filter-btn:hover { border-color: var(--green); color: var(--green); }
+  .cat-filter-btn.active { background: var(--green); border-color: var(--green); color: white; }
+
+  /* ── LESSON DETAIL ── */
+  .lesson-detail-header {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  .breadcrumb { font-size: 13px; color: var(--ink-muted); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+  .breadcrumb-link { color: var(--green); cursor: pointer; font-weight: 600; }
+  .breadcrumb-link:hover { text-decoration: underline; }
+  .lesson-detail-title { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+  .lesson-detail-desc { font-size: 15px; color: var(--ink-muted); margin-bottom: 18px; line-height: 1.6; }
+  .lesson-detail-meta { display: flex; align-items: center; gap: 16px; font-size: 13px; color: var(--ink-muted); }
+  .lesson-detail-meta span { display: flex; align-items: center; gap: 4px; }
+
+  /* ── STEPS ── */
+  .steps-container { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+  .step-progress { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .step-dot {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    transition: all .2s;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .step-dot-done { background: var(--green); color: white; }
+  .step-dot-active { background: var(--green); color: white; box-shadow: 0 0 0 4px var(--green-pale); }
+  .step-dot-pending { background: var(--border); color: var(--ink-muted); }
+  .step-line { flex: 1; height: 2px; background: var(--border); border-radius: 2px; }
+  .step-line-done { background: var(--green); }
+
+  .step-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .step-card-header {
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .step-card-header:hover { background: var(--cream); }
+  .step-card-header.active-step { background: var(--green-pale); }
+  .step-num { font-size: 12px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: .05em; }
+  .step-card-title { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 600; color: var(--ink); margin-top: 2px; }
+  .step-chevron { color: var(--ink-muted); transition: transform .2s; font-size: 18px; }
+  .step-chevron.open { transform: rotate(180deg); }
+  .step-card-body { padding: 0 24px 24px; display: none; }
+  .step-card-body.open { display: block; }
+  .step-content { font-size: 15px; color: var(--ink-mid); line-height: 1.7; margin-bottom: 16px; }
+  .step-example {
+    background: var(--cream);
+    border-left: 3px solid var(--green);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+  }
+  .step-example-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--green); margin-bottom: 8px; }
+  .step-example pre { font-family: 'Nunito Sans', sans-serif; font-size: 14px; color: var(--ink-mid); white-space: pre-wrap; line-height: 1.6; }
+  .step-nav { display: flex; gap: 10px; margin-top: 18px; }
+
+  /* ── EXERCISE ── */
+  .exercise-card {
+    background: var(--amber-pale);
+    border: 1.5px solid #fcd34d;
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .exercise-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--amber); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .exercise-prompt { font-size: 15px; color: var(--ink-mid); margin-bottom: 16px; line-height: 1.6; }
+  .exercise-textarea {
+    width: 100%;
+    min-height: 100px;
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--white);
+    border: 1.5px solid #fcd34d;
+    border-radius: 8px;
+    padding: 12px 14px;
+    resize: vertical;
+    outline: none;
+    transition: border-color .15s;
+    line-height: 1.6;
+  }
+  .exercise-textarea:focus { border-color: var(--amber); }
+  .exercise-tip { font-size: 12px; color: var(--amber); margin-top: 10px; font-style: italic; }
+
+  /* ── COMPLETE BANNER ── */
+  .complete-banner {
+    background: var(--green-pale);
+    border: 1.5px solid #86efac;
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+  .complete-banner h3 { font-family: 'Fraunces', serif; font-size: 18px; color: var(--green); }
+  .complete-banner p { font-size: 13px; color: var(--ink-muted); margin-top: 3px; }
+  .complete-actions { display: flex; gap: 10px; flex-shrink: 0; }
+
+  /* ── QUIZ ── */
+  .quiz-wrap { max-width: 620px; margin: 0 auto; }
+  .quiz-header { text-align: center; margin-bottom: 32px; }
+  .quiz-progress-bar { height: 6px; background: var(--border); border-radius: 10px; margin-bottom: 10px; }
+  .quiz-progress-fill { height: 100%; background: var(--green); border-radius: 10px; transition: width .3s; }
+  .quiz-counter { font-size: 13px; color: var(--ink-muted); }
+  .quiz-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 20px;
+  }
+  .quiz-q { font-family: 'Fraunces', serif; font-size: 21px; font-weight: 600; color: var(--ink); line-height: 1.4; margin-bottom: 24px; }
+  .quiz-options { display: flex; flex-direction: column; gap: 10px; }
+  .quiz-option {
+    width: 100%;
+    text-align: left;
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink-mid);
+    background: var(--cream);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    cursor: pointer;
+    transition: all .15s;
+    line-height: 1.4;
+  }
+  .quiz-option:hover { border-color: var(--green); color: var(--green); background: var(--green-pale); }
+  .quiz-option.correct { background: var(--green-pale); border-color: var(--green); color: var(--green); font-weight: 700; }
+  .quiz-option.wrong { background: var(--coral-pale); border-color: var(--coral); color: var(--coral); }
+  .quiz-option:disabled { cursor: default; }
+
+  /* ── QUIZ RESULTS ── */
+  .quiz-result {
+    text-align: center;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 48px 32px;
+    box-shadow: var(--shadow-md);
+  }
+  .result-emoji { font-size: 60px; margin-bottom: 16px; }
+  .result-title { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+  .result-score { font-size: 48px; font-family: 'Fraunces', serif; font-weight: 700; color: var(--green); margin: 16px 0; }
+  .result-msg { font-size: 15px; color: var(--ink-muted); margin-bottom: 28px; line-height: 1.6; max-width: 400px; margin-left: auto; margin-right: auto; }
+  .result-actions { display: flex; gap: 12px; justify-content: center; }
+  .btn-lg {
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 12px 26px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  /* ── PROMPT LIBRARY ── */
+  .prompts-header { margin-bottom: 24px; }
+  .prompts-header h2 { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+  .prompts-header p { font-size: 15px; color: var(--ink-muted); }
+  .prompts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .prompt-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+  }
+  .prompt-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .prompt-emoji { font-size: 24px; }
+  .prompt-cat-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); }
+  .prompt-title { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 12px; }
+  .prompt-template {
+    background: var(--cream);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--ink-mid);
+    line-height: 1.6;
+    font-style: italic;
+    flex: 1;
+    margin-bottom: 14px;
+    border: 1px solid var(--border);
+  }
+  .copy-btn {
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1.5px solid var(--green);
+    background: transparent;
+    color: var(--green);
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .copy-btn:hover, .copy-btn.copied { background: var(--green); color: white; }
+
+  /* ── ADMIN ── */
+  .admin-header {
+    background: var(--amber-pale);
+    border: 1.5px solid #fcd34d;
+    border-radius: var(--radius);
+    padding: 16px 24px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .admin-header h2 { font-family: 'Fraunces', serif; font-size: 22px; color: var(--amber); }
+  .admin-tabs { display: flex; gap: 6px; margin-bottom: 24px; }
+  .admin-tab {
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    color: var(--ink-mid);
+    cursor: pointer;
+  }
+  .admin-tab.active { background: var(--amber); border-color: var(--amber); color: white; }
+
+  .admin-form {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+  }
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 13px; font-weight: 700; color: var(--ink-mid); margin-bottom: 6px; display: block; }
+  .form-input, .form-textarea, .form-select {
+    width: 100%;
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    background: var(--cream);
+    outline: none;
+    transition: border-color .15s;
+  }
+  .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--amber); }
+  .form-textarea { min-height: 80px; resize: vertical; line-height: 1.6; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .admin-list { display: flex; flex-direction: column; gap: 10px; }
+  .admin-list-item {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow);
+  }
+  .admin-item-info { flex: 1; }
+  .admin-item-title { font-weight: 600; font-size: 15px; color: var(--ink); }
+  .admin-item-meta { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+  .delete-btn {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--coral);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  .delete-btn:hover { background: var(--coral-pale); }
+
+  /* ── MODAL ── */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    width: 360px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  }
+  .modal h3 { font-family: 'Fraunces', serif; font-size: 22px; margin-bottom: 8px; }
+  .modal p { font-size: 14px; color: var(--ink-muted); margin-bottom: 20px; line-height: 1.5; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 60px 20px; color: var(--ink-muted); }
+  .empty-icon { font-size: 48px; margin-bottom: 14px; }
+  .empty h3 { font-family: 'Fraunces', serif; font-size: 20px; color: var(--ink); margin-bottom: 6px; }
+  .empty p { font-size: 14px; line-height: 1.6; }
+
+  /* ── TOOLTIP ── */
+  .tooltip { position: relative; }
+  
+  /* ── MISC ── */
+  .divider { height: 1px; background: var(--border); margin: 28px 0; }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag { background: var(--cream); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; font-size: 12px; color: var(--ink-muted); }
+  .text-muted { color: var(--ink-muted); font-size: 13px; }
+  .mt-4 { margin-top: 16px; }
+  .mb-4 { margin-bottom: 16px; }
+  .flex { display: flex; align-items: center; }
+  .gap-2 { gap: 8px; }
+  .gap-3 { gap: 12px; }
+
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 16px;
+  }
+  .back-btn:hover { color: var(--green); }
+`;
+
+// ─── LESSON DATA ──────────────────────────────────────────────────────────────
+const LESSONS = [
+  {
+    id: "basics-1", category: "Basics", emoji: "🤖",
+    title: "What is ChatGPT?", duration: "5 min",
+    description: "Learn what ChatGPT is, where it came from, and why everyone is talking about it.",
+    steps: [
+      {
+        title: "The Simple Explanation",
+        content: "ChatGPT is an AI assistant you can have a conversation with. Think of it like texting a very knowledgeable friend who has read millions of books, articles, and websites — and can respond to almost any question or request.",
+        example: 'You type: "Explain how rainbows form"\nChatGPT replies with a clear, friendly explanation tailored to how you asked.'
+      },
+      {
+        title: "How It Was Built",
+        content: "ChatGPT was created by a company called OpenAI. It was trained by reading enormous amounts of text from the internet and books. Through this process, it learned patterns in language — how words, sentences, and ideas connect.",
+        example: "It's like how you learned to speak: by hearing thousands of conversations, you understood how language works. ChatGPT did the same, but with text and at massive scale."
+      },
+      {
+        title: "It's a Conversation",
+        content: "Unlike a search engine that gives you a list of links, ChatGPT has a back-and-forth conversation. You can ask follow-up questions, ask it to explain differently, or build on what it said.",
+        example: 'You: "What is inflation?"\nChatGPT: [explains inflation]\nYou: "Now explain it like I\'m 10 years old"\nChatGPT: [gives a simpler explanation]'
+      },
+      {
+        title: "What It's Used For",
+        content: "People use ChatGPT for writing help, answering questions, learning new topics, brainstorming ideas, summarizing documents, and much more. It's like having a versatile assistant available 24/7.",
+        example: "A student might use it to understand a history topic. A small business owner might use it to draft an email. A writer might use it to brainstorm story ideas."
+      }
+    ],
+    exercise: {
+      prompt: "Practice introducing yourself to ChatGPT. Write how you would start a conversation with it about a topic you're curious about.",
+      placeholder: 'e.g., "Hi ChatGPT, I\'m curious about how to start a garden. Can you help me?"',
+      tip: "There's no wrong answer! ChatGPT works like a conversation — just speak naturally."
+    },
+    quiz: [
+      { q: "What is ChatGPT best described as?", options: ["A search engine that finds links", "An AI assistant you can have a conversation with", "A social media platform", "A video streaming service"], answer: 1 },
+      { q: "Who created ChatGPT?", options: ["Google", "Microsoft", "OpenAI", "Apple"], answer: 2 },
+      { q: "How is ChatGPT different from a search engine?", options: ["It's faster", "It gives you a list of website links", "It has back-and-forth conversations and can explain things in different ways", "It only works for math questions"], answer: 2 }
+    ]
+  },
+  {
+    id: "basics-2", category: "Basics", emoji: "⚡",
+    title: "What ChatGPT Can Do", duration: "6 min",
+    description: "Discover the wide range of tasks ChatGPT can help you with every day.",
+    steps: [
+      {
+        title: "Writing & Editing",
+        content: "ChatGPT can write emails, letters, essays, social media posts, and more. It can also proofread and improve your existing writing — fixing grammar, making it clearer, or changing the tone.",
+        example: 'Prompt: "Write a polite email to my landlord asking to fix the leaking sink"\nResult: A ready-to-send professional email in seconds.'
+      },
+      {
+        title: "Explaining & Teaching",
+        content: "Ask it to explain any concept — from how a car engine works to what a mortgage is. You can ask it to explain things simply, in more detail, or in different ways until you understand.",
+        example: 'Prompt: "Explain what interest rates are and give me a simple real-world example"\nResult: A clear explanation with a relatable example.'
+      },
+      {
+        title: "Brainstorming & Ideas",
+        content: "Stuck for ideas? ChatGPT can generate options, suggestions, and creative directions. Give it a topic and ask for options — it'll produce many ideas quickly.",
+        example: 'Prompt: "Give me 10 birthday party themes for a 7-year-old who loves dinosaurs"\nResult: 10 creative, actionable theme ideas.'
+      },
+      {
+        title: "Summarizing & Research",
+        content: "Paste in a long article, email thread, or document and ask ChatGPT to summarize the key points. It can help you research topics by explaining what's known about them.",
+        example: 'Prompt: "Summarize this article in 3 bullet points: [paste article text]"\nResult: A concise summary of the main points.'
+      }
+    ],
+    exercise: {
+      prompt: "Think of something you've been wanting help with — an email to write, something to understand, or an idea you need. Write a prompt you'd use to ask ChatGPT.",
+      placeholder: 'e.g., "Help me write a thank-you message to my coworkers after my retirement party"',
+      tip: "Think of ChatGPT like a helpful colleague — what would you ask them for help with?"
+    },
+    quiz: [
+      { q: "Which tasks can ChatGPT help with?", options: ["Only math problems", "Writing, explaining, brainstorming, and summarizing", "Only answering yes/no questions", "Only translating languages"], answer: 1 },
+      { q: "If you paste a long document and ask ChatGPT to summarize it, what will it do?", options: ["Refuse because the document is too long", "Provide key points from the document", "Search the internet for related articles", "Send you the document back"], answer: 1 },
+      { q: "You want ChatGPT to explain something more simply. What should you do?", options: ["Start a new conversation", 'Just tell it: "Explain that more simply"', "Use a different AI tool", "You can't — it only explains things one way"], answer: 1 }
+    ]
+  },
+  {
+    id: "basics-3", category: "Basics", emoji: "⚠️",
+    title: "What ChatGPT Cannot Do", duration: "5 min",
+    description: "Understanding ChatGPT's limitations helps you use it more effectively and safely.",
+    steps: [
+      {
+        title: "It Can Be Wrong",
+        content: "ChatGPT sometimes confidently states incorrect information — called 'hallucination.' It can make up facts, names, or dates that sound plausible but are not true. Always verify important information from reliable sources.",
+        example: "If you ask about medical symptoms, confirm what ChatGPT says with a real doctor or a trusted medical website like WebMD or the CDC."
+      },
+      {
+        title: "It Has a Knowledge Cutoff",
+        content: "ChatGPT's knowledge has a cutoff date — it doesn't know about recent news or events. If you need up-to-date information (today's stock prices, yesterday's headlines), use a search engine or news source.",
+        example: "For current events, use Google News or your local news app. ChatGPT is better for topics that don't change quickly — history, how-to guides, writing help, etc."
+      },
+      {
+        title: "It Can't Take Real-World Actions",
+        content: "ChatGPT can draft an email but can't send it. It can explain how to pay a bill but can't pay it for you. It doesn't have access to your accounts or files unless you share them.",
+        example: "Think of ChatGPT as a very smart advisor — it gives you the words and ideas, but you're the one who acts on them."
+      },
+      {
+        title: "It Doesn't Know You Personally",
+        content: "Unless you tell it, ChatGPT doesn't know anything about you. By default, it also doesn't remember previous conversations. Each new chat starts fresh.",
+        example: 'If you want personalized advice, give it context: "I\'m a 55-year-old retired teacher in Texas looking for..."'
+      }
+    ],
+    exercise: {
+      prompt: "Write one thing you should NOT fully trust ChatGPT to get right without double-checking, and explain why.",
+      placeholder: 'e.g., "Medical advice — because ChatGPT can be wrong and health is too important to risk"',
+      tip: "There's no single right answer. The goal is to practice thinking critically about when AI needs a second opinion."
+    },
+    quiz: [
+      { q: "What does 'hallucination' mean in the context of AI?", options: ["The AI makes visual art", "The AI confidently states incorrect or made-up information", "The AI becomes confused and stops responding", "The AI copies text from websites"], answer: 1 },
+      { q: "ChatGPT has a knowledge cutoff. What does this mean?", options: ["It stops working after a few hours", "It doesn't know about events after its training date", "It can only answer a limited number of questions", "It refuses to discuss certain topics"], answer: 1 },
+      { q: "Which task CAN ChatGPT reliably do?", options: ["Tell you today's stock prices", "Send an email on your behalf", "Help you draft a well-written email", "Access your bank account to check your balance"], answer: 2 }
+    ]
+  },
+  {
+    id: "prompting-1", category: "Prompting", emoji: "💬",
+    title: "What is a Prompt?", duration: "5 min",
+    description: "Learn the most important concept in using AI: how to write a good prompt.",
+    steps: [
+      {
+        title: "The Definition",
+        content: "A prompt is simply the message or question you type to ChatGPT. It's the instruction you give it. Everything ChatGPT does starts with your prompt — so learning to write good prompts is the most valuable skill you can develop.",
+        example: '"Tell me a joke about cats" — this is a simple prompt.\n"Write a 3-sentence summary of the water cycle for a middle school student" — this is a detailed prompt.'
+      },
+      {
+        title: "Prompts Are Instructions",
+        content: "Think of a prompt as an instruction to a very capable but literal assistant. The clearer and more specific your instruction, the better the result. Vague instructions get vague results.",
+        example: 'Vague: "Help me write something"\nBetter: "Help me write a short thank-you note to my doctor for being so kind during my recovery"'
+      },
+      {
+        title: "Context Makes a Big Difference",
+        content: "Adding context about who you are, what you need, and why you need it dramatically improves ChatGPT's response. You don't need to share personal details — just enough background for relevant help.",
+        example: 'Without context: "Explain investing"\nWith context: "Explain investing to a 60-year-old who has never invested before and is worried about risk"'
+      },
+      {
+        title: "You Can Refine and Iterate",
+        content: "Your first prompt doesn't have to be perfect! If the response isn't quite right, follow up: \"Make it shorter,\" \"Use simpler words,\" or \"Try again with a different approach.\"",
+        example: 'First prompt: "Write a recipe for pasta"\nFollow-up: "Make it dairy-free and add the cooking time for each step"'
+      }
+    ],
+    exercise: {
+      prompt: 'Take this vague prompt and rewrite it to be more specific: "Help me write an email." Add context, a goal, and the tone you want.',
+      placeholder: 'e.g., "Help me write a friendly but professional email to my boss asking for a day off next Friday for a family event"',
+      tip: "Good prompts often answer: What do you want? Who is it for? What tone/style? Any specific requirements?"
+    },
+    quiz: [
+      { q: "What is a 'prompt' in ChatGPT?", options: ["A type of AI model", "The message or instruction you type to ChatGPT", "A monthly subscription plan", "A notification from the app"], answer: 1 },
+      { q: "Which prompt will likely get a better result?", options: ['"Write something"', '"Write a 2-paragraph birthday message for my 80-year-old grandmother who loves gardening"', '"Birthday message"', '"Help me"'], answer: 1 },
+      { q: "What should you do if ChatGPT's response isn't quite what you wanted?", options: ["Start a completely new conversation", "Close the app and try later", 'Follow up with instructions like "Make it shorter" or "Use simpler words"', "You're stuck with whatever it gives you"], answer: 2 }
+    ]
+  },
+  {
+    id: "prompting-2", category: "Prompting", emoji: "✏️",
+    title: "Writing Better Prompts", duration: "8 min",
+    description: "Master the art of clear, specific prompts that get great results every time.",
+    steps: [
+      {
+        title: "Be Specific About What You Want",
+        content: "The more specific you are, the better ChatGPT performs. Specify the format (bullet points, paragraph), the length (short, detailed, 3 sentences), and the content (what to include or avoid).",
+        example: 'Instead of: "Give me tips for sleep"\nTry: "Give me 5 practical tips for falling asleep faster, written as short bullet points for someone who lies awake worrying"'
+      },
+      {
+        title: "Tell It Who You Are",
+        content: "Giving ChatGPT context about you — your role, experience level, or situation — tailors the response to your needs. You don't need to share sensitive details, just relevant background.",
+        example: '"I\'m a first-time homebuyer with no real estate knowledge. Explain what escrow means in plain English."'
+      },
+      {
+        title: "Give It a Role",
+        content: "You can tell ChatGPT to act as a specific type of expert. This shapes how it responds — the vocabulary it uses, the level of detail, and the perspective it takes.",
+        example: '"Act as a patient cooking teacher explaining to a beginner how to dice an onion without crying"\n\n"You are a friendly HR professional. Help me prepare for a job interview."'
+      },
+      {
+        title: "Use Examples",
+        content: "If you have a specific style or format in mind, show it an example. Say 'write something like this:' and include a sample. This is one of the most powerful prompting techniques.",
+        example: '"Write a product description in this style:\n[Paste your example here]\nNow write one for a stainless steel water bottle."'
+      }
+    ],
+    exercise: {
+      prompt: "Using what you've learned, write a detailed prompt for one of these tasks: (1) Plan a weekend trip, (2) Explain a confusing bill or document, or (3) Help write a bio for your LinkedIn profile.",
+      placeholder: "Write your detailed prompt here. Remember: be specific, add context, and state the format or length you want.",
+      tip: "A great prompt often has: Task + Context + Format/Length + Tone. Try hitting all four!"
+    },
+    quiz: [
+      { q: "What's the most effective way to improve a vague prompt?", options: ["Use more exclamation marks", "Add specific details: format, length, tone, and context", "Type in all caps", "Ask the same question twice"], answer: 1 },
+      { q: "What does 'giving ChatGPT a role' mean?", options: ["Assigning it a username", "Telling it to act as a specific type of expert", "Paying for a premium plan", "Setting it to a different language"], answer: 1 },
+      { q: "You want a recipe but you're vegetarian and need it done in 30 minutes. What should you do?", options: ["Just ask for 'a recipe' and hope for the best", 'Include those details: "a vegetarian dinner recipe that takes 30 minutes or less"', "Use a different app for recipes", "Ask for a recipe, then separately mention vegetarian, then time"], answer: 1 }
+    ]
+  },
+  {
+    id: "safety-1", category: "Safety", emoji: "🔒",
+    title: "Protecting Your Privacy", duration: "5 min",
+    description: "What you should and shouldn't share with AI tools — and why it matters.",
+    steps: [
+      {
+        title: "What Not to Share",
+        content: "Never share sensitive personal information with ChatGPT, including: Social Security numbers, passwords, bank account or credit card numbers, medical record numbers, or any ID numbers. This information is not needed for ChatGPT to help you.",
+        example: 'AVOID: "My SSN is 123-45-6789. Can you help me fill out this form?"\nBETTER: "What information is typically needed for this type of form?" — then fill in the details yourself.'
+      },
+      {
+        title: "Be Careful With Names and Locations",
+        content: "Think twice before sharing your full name, home address, or the names of family members — especially in combination. For most tasks, you can use placeholder information or speak generally.",
+        example: 'Instead of: "My daughter Sarah Johnson at Lincoln Elementary needs..."\nTry: "My 8-year-old daughter needs help with a school project on..."'
+      },
+      {
+        title: "Your Conversations May Not Be Private",
+        content: "Your conversations with ChatGPT may be used by OpenAI to improve their models. In settings, you can often turn off 'improve the model.' Be aware that what you type isn't guaranteed to be fully private.",
+        example: "If privacy matters for a task (like discussing a sensitive legal or medical situation), consider speaking more generally or consulting a professional directly."
+      },
+      {
+        title: "Think of It Like a Public Conversation",
+        content: "A simple rule of thumb: if you wouldn't say it loudly in a coffee shop, be careful about typing it to an AI. Not because ChatGPT is a person, but because your data could potentially be stored or reviewed.",
+        example: "Talking about general health questions: fine.\nSharing your specific medical records, prescriptions, or lab results: not recommended."
+      }
+    ],
+    exercise: {
+      prompt: 'Rewrite this unsafe prompt to protect your privacy while still getting help:\n\n"I\'m John Smith at 123 Oak St. My SSN is 456-78-9012. Help me write a letter to the IRS about a tax issue."',
+      placeholder: "Write a safer version of the prompt here...",
+      tip: "You can ask ChatGPT to help draft a letter to the IRS without sharing your personal details — just describe the situation generally."
+    },
+    quiz: [
+      { q: "Which piece of information should you NEVER share with ChatGPT?", options: ["Your favorite hobby", "Your Social Security Number", "The city you live in", "Your profession"], answer: 1 },
+      { q: "What's a good privacy rule of thumb for AI tools?", options: ["Share everything — AI is completely secure", "If you wouldn't say it loudly in a public place, be cautious sharing it with AI", "Only use AI for fun topics", "Always use your full name so the AI can personalize responses"], answer: 1 },
+      { q: "If you need help writing a letter about a sensitive medical issue, what's the best approach?", options: ["Share your full medical history for context", "Describe the situation generally without sharing specific records or ID numbers", "Don't use ChatGPT at all for health topics", "Only use it if you have a paid subscription"], answer: 1 }
+    ]
+  },
+  {
+    id: "safety-2", category: "Safety", emoji: "🔍",
+    title: "Fact-Checking AI Responses", duration: "6 min",
+    description: "Learn why and how to verify what ChatGPT tells you.",
+    steps: [
+      {
+        title: "Why ChatGPT Can Be Wrong",
+        content: "ChatGPT generates responses based on patterns in its training data — it's predicting what words make sense next, not 'looking up' facts. This means it can confidently produce inaccurate information, especially for specific facts, dates, statistics, or quotes.",
+        example: "ChatGPT might tell you a book was published in 1985 when it was actually 1992. It sounds confident but it's wrong. Always verify specific facts you plan to use."
+      },
+      {
+        title: "When to Fact-Check",
+        content: "Always verify: medical or health information, legal information, statistics and numbers, quotes from real people, historical dates and events, and any information you'll use for important decisions.",
+        example: "If ChatGPT tells you the recommended daily vitamin D dosage, verify it on a medical site like Mayo Clinic or WebMD before following that advice."
+      },
+      {
+        title: "How to Fact-Check",
+        content: "Use trusted sources: government websites (.gov), medical institutions, reputable news organizations, and encyclopedias. You can ask ChatGPT where it got information — though its sources may not always be accurate either.",
+        example: "Trusted sources:\n• Health: CDC, Mayo Clinic, NHS\n• Legal: State government websites\n• News: AP News, Reuters, BBC\n• Science: NASA, National Geographic"
+      },
+      {
+        title: "Treat It Like a Smart Friend, Not an Expert",
+        content: "ChatGPT is great for getting oriented on a topic, brainstorming, and getting things written. But for important decisions, treat it like a knowledgeable friend — helpful as a starting point, not a final authority.",
+        example: "ChatGPT says you might have a vitamin deficiency. Good next step: visit your doctor and ask about testing — don't just start taking supplements."
+      }
+    ],
+    exercise: {
+      prompt: 'Imagine ChatGPT told you: "Studies show that drinking 3 cups of green tea daily cures insomnia in 90% of people." What steps would you take to verify this claim? Write your fact-checking plan.',
+      placeholder: 'e.g., "I would search for this on the Mayo Clinic website, then look for studies on PubMed, and ask my doctor..."',
+      tip: "The key questions: Is the source trustworthy? Is the statistic cited? Does it match other sources?"
+    },
+    quiz: [
+      { q: "Why might ChatGPT give you incorrect information?", options: ["It's trying to trick you", "It generates responses based on language patterns, not verified fact lookups", "It only works in English", "It needs to be paid to give accurate responses"], answer: 1 },
+      { q: "Which type of information from ChatGPT is MOST important to fact-check?", options: ["Tips for what to name a pet", "Medical dosage information you plan to follow", "Ideas for a birthday party theme", "Suggestions for movie genres"], answer: 1 },
+      { q: "Which is the best source to verify a health claim ChatGPT made?", options: ["Another ChatGPT conversation", "A random blog post", "The CDC or Mayo Clinic website", "Comments on social media"], answer: 2 }
+    ]
+  },
+  {
+    id: "usecases-1", category: "Use Cases", emoji: "✍️",
+    title: "Writing Help", duration: "7 min",
+    description: "Use ChatGPT to draft emails, letters, speeches, and more in minutes.",
+    steps: [
+      {
+        title: "Emails & Messages",
+        content: "ChatGPT can write almost any type of email or message. Give it the purpose, the recipient, the tone, and key points — it'll draft a ready-to-send message that you can then edit as needed.",
+        example: 'Prompt: "Write a polite but firm email to a contractor who has not responded to my last three messages about a repair job. Professional tone, ask for a response within 48 hours."'
+      },
+      {
+        title: "Editing & Proofreading",
+        content: "Paste any text you've written and ask it to fix grammar, improve clarity, or adjust the tone. You can be very specific about what you want changed and what to keep.",
+        example: 'Prompt: "Proofread this text and fix any grammar errors. Keep my casual tone — don\'t make it too formal:\n[paste your text here]"'
+      },
+      {
+        title: "Letters & Formal Documents",
+        content: "Need to write a formal letter — a complaint, a request, an appeal? Tell ChatGPT the situation and what outcome you're hoping for. It can draft professional letters that strike the right tone.",
+        example: 'Prompt: "Write a formal letter to my insurance company disputing a claim denial for water damage. They said it was pre-existing; I have photos proving otherwise."'
+      },
+      {
+        title: "Personal Writing & Speeches",
+        content: "ChatGPT can write thank-you notes, birthday messages, wedding toasts, retirement speeches — any personal writing where you want help finding the right words.",
+        example: 'Prompt: "Help me write a heartfelt 2-minute speech for my dad\'s retirement party. He worked as a firefighter for 35 years. He loves fishing and his family. Keep it warm and funny."'
+      }
+    ],
+    exercise: {
+      prompt: "Choose a real email or message you've been meaning to write and craft a specific prompt to have ChatGPT help you with it.",
+      placeholder: 'e.g., "Write a thank-you email to a neighbor who brought food while I was sick. Warm and genuine, not over-the-top. Her name is Patricia."',
+      tip: "Even if you don't send the result, practicing writing prompts for real tasks is the best way to build the skill."
+    },
+    quiz: [
+      { q: "What information should you give ChatGPT when asking it to write an email?", options: ["Nothing — just say 'write an email'", "The purpose, recipient, tone, and key points you want to make", "Only the recipient's name", "A list of every email you've ever sent"], answer: 1 },
+      { q: "You want ChatGPT to fix your writing but keep your casual tone. What should you include in your prompt?", options: ["Nothing extra — it automatically preserves your tone", '"Fix grammar errors but keep my casual tone — don\'t make it too formal"', '"Rewrite this completely in a formal style"', "Just paste the text with no instructions"], answer: 1 },
+      { q: "Which of these writing tasks would ChatGPT be LEAST useful for?", options: ["Drafting an email to a contractor", "Writing a retirement speech", "Automatically sending an email on your behalf", "Proofreading a letter"], answer: 2 }
+    ]
+  },
+  {
+    id: "usecases-2", category: "Use Cases", emoji: "📚",
+    title: "Learning & Research", duration: "7 min",
+    description: "Use ChatGPT as a personal tutor to learn anything, faster.",
+    steps: [
+      {
+        title: "Explain Any Topic Simply",
+        content: "One of ChatGPT's greatest strengths is explaining complex topics clearly. Specify your level — beginner, intermediate — and it will adjust. Ask it to use analogies and real-world examples.",
+        example: 'Prompt: "Explain how compound interest works as if I\'ve never heard of it before. Use a simple real-world example with dollar amounts."'
+      },
+      {
+        title: "Summarize Long Content",
+        content: "Paste a long article, report, email, or document and ask ChatGPT to summarize the key points. A huge time-saver for staying informed without reading everything word for word.",
+        example: 'Prompt: "Here\'s a long article about changes to Medicare. Summarize the 3 most important changes that would affect a 67-year-old retiree:\n[paste article]"'
+      },
+      {
+        title: "Ask Follow-Up Questions",
+        content: "Once ChatGPT explains something, don't stop there. Ask follow-up questions to go deeper, get examples, or relate it to your situation. This is how great learning conversations work.",
+        example: 'First: "What is a Roth IRA?"\nFollow-up: "Is it a good option for someone who is 55 and just starting to save for retirement?"\nFollow-up: "What are the income limits for contributing?"'
+      },
+      {
+        title: "Quiz Yourself",
+        content: "Ask ChatGPT to quiz you on something you've been learning. It can generate practice questions, check your answers, and explain where you went wrong — like having a personal tutor on demand.",
+        example: 'Prompt: "I\'ve been learning about the American Civil War. Give me 5 beginner-level quiz questions, then after I answer, explain which ones I got wrong and why."'
+      }
+    ],
+    exercise: {
+      prompt: "Pick a topic you've always been curious about but never fully understood. Write a ChatGPT prompt to learn about it — and include a way to test your understanding at the end.",
+      placeholder: 'e.g., "Explain how the U.S. Electoral College works to someone who has never studied it. Use a simple example. Then give me 3 quiz questions to test my understanding."',
+      tip: "The best learning prompts ask for: explanation + example + a way to test your understanding."
+    },
+    quiz: [
+      { q: "How can you get ChatGPT to explain something at your level?", options: ["You can't control the explanation level", 'Tell it your experience level, e.g., "explain this to a complete beginner"', "Use shorter sentences in your prompt", "Ask it in a different language"], answer: 1 },
+      { q: "You have a 10-page report to read but limited time. How can ChatGPT help?", options: ["It can read the report for you and tell you if it's important", "Paste the text and ask it to summarize the key points", "Ask ChatGPT to find the report online and summarize it", "ChatGPT can't help with long documents"], answer: 1 },
+      { q: "How can you use ChatGPT to test your understanding of a topic?", options: ["You can't — it only teaches, not tests", "Ask it to generate quiz questions on the topic", "Download its quiz app separately", "Only by using the paid version"], answer: 1 }
+    ]
+  }
+];
+
+// ─── PROMPT TEMPLATES ─────────────────────────────────────────────────────────
+const PROMPT_TEMPLATES = [
+  { id: "w1", category: "Writing", emoji: "📧", title: "Professional Email", template: "Write a [formal/friendly] email to [recipient] about [topic]. The goal is to [desired outcome]. Keep it [short/detailed] and professional." },
+  { id: "w2", category: "Writing", emoji: "✍️", title: "Proofread My Text", template: "Proofread the following text. Fix any grammar, spelling, or punctuation errors. Keep my [formal/casual] tone:\n\n[paste your text here]" },
+  { id: "w3", category: "Writing", emoji: "💌", title: "Thank-You Note", template: "Write a warm, genuine thank-you [note/email] to [recipient name] for [what they did]. Keep it [short/heartfelt]. Tone: [casual/formal]." },
+  { id: "w4", category: "Writing", emoji: "📝", title: "Complaint Letter", template: "Write a polite but firm letter to [company/person] about [the issue]. I want them to [desired outcome]. Keep it professional and factual." },
+  { id: "w5", category: "Writing", emoji: "🎤", title: "Speech or Toast", template: "Write a [2-minute] [wedding toast/retirement speech/birthday speech] for [person's name]. They are [description]. Key things to mention: [list]. Tone: [warm and funny/heartfelt/inspiring]." },
+  { id: "l1", category: "Learning", emoji: "🎓", title: "Explain Like I'm a Beginner", template: "Explain [topic] to me as a complete beginner. Use simple language, avoid jargon, and give me a real-world example I can relate to." },
+  { id: "l2", category: "Learning", emoji: "📋", title: "Summarize an Article", template: "Summarize the following article in [3 bullet points / a short paragraph]. Focus on the most important information:\n\n[paste article here]" },
+  { id: "l3", category: "Learning", emoji: "❓", title: "Quiz Me on a Topic", template: "I've been learning about [topic]. Give me [5] quiz questions at a [beginner/intermediate] level. After I answer, tell me which ones I got wrong and explain the correct answers." },
+  { id: "l4", category: "Learning", emoji: "🔗", title: "Explain With Analogies", template: "Explain [complex concept] using simple analogies and comparisons to everyday things I already understand. Avoid technical jargon." },
+  { id: "wk1", category: "Work", emoji: "📅", title: "Plan My Week", template: "Help me plan my work week. Tasks to complete: [list your tasks]. My priorities are: [list priorities]. I work [hours] per day. Create a realistic daily schedule." },
+  { id: "wk2", category: "Work", emoji: "📊", title: "Summarize a Meeting", template: "I have these notes from a meeting: [paste your notes]. Summarize the key decisions made, action items, and who is responsible for each. Format as a clear list." },
+  { id: "wk3", category: "Work", emoji: "💼", title: "Job Interview Prep", template: "I'm interviewing for a [job title] role at [type of company]. My background: [brief description]. Help me prepare answers to common interview questions and practice with me." },
+  { id: "wk4", category: "Work", emoji: "📈", title: "Write a Bio", template: "Write a professional bio for my [LinkedIn/website]. I am a [job title] with [X years] of experience in [industry]. Key achievements: [list 2-3]. Tone: [professional/approachable]. Length: [short/medium]." },
+  { id: "c1", category: "Creative", emoji: "💡", title: "Brainstorm Ideas", template: "Give me [10] creative ideas for [topic/project/event]. I want options that are [fun/unique/budget-friendly]. Context: [brief description of your situation]." },
+  { id: "c2", category: "Creative", emoji: "🎁", title: "Gift Ideas", template: "Suggest [5] gift ideas for [recipient description, e.g., 'my 70-year-old mother who loves cooking and gardening']. Budget: [$amount]. Occasion: [birthday/holiday/etc.]." },
+  { id: "c3", category: "Creative", emoji: "🍽️", title: "Recipe Suggestions", template: "Suggest a [breakfast/lunch/dinner] recipe that is [vegetarian/quick/budget-friendly]. I have these ingredients: [list]. Skill level: [beginner/intermediate]." },
+  { id: "r1", category: "Research", emoji: "🔎", title: "Pros & Cons Analysis", template: "Give me a balanced pros and cons analysis of [topic/decision/product]. I'm considering this because: [your situation]. Focus on what matters most for [my goals/priorities]." },
+  { id: "r2", category: "Research", emoji: "⚖️", title: "Compare Two Options", template: "Compare [Option A] vs [Option B] for [my situation/use case]. I care most about: [list your priorities]. Give me a clear recommendation at the end with your reasoning." },
+  { id: "r3", category: "Research", emoji: "📚", title: "Research Overview", template: "Give me an overview of [topic]. I'm a [beginner/somewhat familiar]. Include: what it is, why it matters, common misconceptions, and the most important things to know." }
+];
+
+const CATEGORIES = ["All", "Basics", "Prompting", "Safety", "Use Cases"];
+const PROMPT_CATS = ["All", "Writing", "Learning", "Work", "Creative", "Research"];
+
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+export default function App() {
+  const [view, setView] = useState("home");
+  const [selectedLesson, setSelectedLesson] = useState(null);
+  const [quizLesson, setQuizLesson] = useState(null);
+  const [lessonFilter, setLessonFilter] = useState("All");
+  const [promptFilter, setPromptFilter] = useState("All");
+  const [progress, setProgress] = useState({});
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminPin, setAdminPin] = useState("");
+  const [pinError, setPinError] = useState(false);
+  const [openStep, setOpenStep] = useState(0);
+  const [exerciseText, setExerciseText] = useState("");
+  const [quizState, setQuizState] = useState({ current: 0, answers: [], done: false, score: 0, passed: false });
+  const [copyFeedback, setCopyFeedback] = useState(null);
+  const [customPrompts, setCustomPrompts] = useState([]);
+  const [adminTab, setAdminTab] = useState("lessons");
+  const [newPrompt, setNewPrompt] = useState({ category: "Writing", emoji: "✨", title: "", template: "" });
+  const [loading, setLoading] = useState(true);
+
+  // Load from storage
+  useEffect(() => {
+    async function load() {
+      try { const r = await window.storage.get("progress"); if (r) setProgress(JSON.parse(r.value)); } catch {}
+      try { const r = await window.storage.get("custom-prompts"); if (r) setCustomPrompts(JSON.parse(r.value)); } catch {}
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const saveProgress = useCallback(async (p) => {
+    setProgress(p);
+    try { await window.storage.set("progress", JSON.stringify(p)); } catch {}
+  }, []);
+
+  const saveCustomPrompts = useCallback(async (p) => {
+    setCustomPrompts(p);
+    try { await window.storage.set("custom-prompts", JSON.stringify(p)); } catch {}
+  }, []);
+
+  const allPrompts = [...PROMPT_TEMPLATES, ...customPrompts];
+  const completedCount = Object.values(progress).filter(p => p.completed).length;
+  const quizzedCount = Object.values(progress).filter(p => p.quizPassed).length;
+  const pct = LESSONS.length ? Math.round((completedCount / LESSONS.length) * 100) : 0;
+
+  const openLesson = (lesson) => {
+    setSelectedLesson(lesson);
+    setOpenStep(0);
+    setExerciseText("");
+    setView("lesson");
+  };
+
+  const openQuiz = (lesson) => {
+    setQuizLesson(lesson);
+    setQuizState({ current: 0, answers: [], done: false, score: 0, passed: false });
+    setView("quiz");
+  };
+
+  const markComplete = (lessonId) => {
+    const np = { ...progress, [lessonId]: { ...progress[lessonId], completed: true, exerciseDone: !!exerciseText.trim() } };
+    saveProgress(np);
+  };
+
+  const answerQuiz = (idx) => {
+    const quiz = quizLesson.quiz;
+    const newAnswers = [...quizState.answers, idx];
+    if (quizState.current + 1 >= quiz.length) {
+      const score = newAnswers.filter((a, i) => a === quiz[i].answer).length;
+      const passed = score >= Math.ceil(quiz.length * 0.67);
+      const np = { ...progress, [quizLesson.id]: { ...progress[quizLesson.id], quizScore: score, quizTotal: quiz.length, quizPassed: passed, completed: true } };
+      saveProgress(np);
+      setQuizState({ current: quiz.length - 1, answers: newAnswers, done: true, score, passed });
+    } else {
+      setQuizState(s => ({ ...s, current: s.current + 1, answers: newAnswers }));
+    }
+  };
+
+  const copyTemplate = (tpl, id) => {
+    navigator.clipboard.writeText(tpl).then(() => {
+      setCopyFeedback(id);
+      setTimeout(() => setCopyFeedback(null), 2000);
+    });
+  };
+
+  const handleAdminLogin = () => {
+    if (adminPin === "1234") {
+      setIsAdmin(true);
+      setShowAdminModal(false);
+      setAdminPin("");
+      setPinError(false);
+      setView("admin");
+    } else {
+      setPinError(true);
+    }
+  };
+
+  const addCustomPrompt = () => {
+    if (!newPrompt.title.trim() || !newPrompt.template.trim()) return;
+    const p = { ...newPrompt, id: "custom-" + Date.now() };
+    saveCustomPrompts([...customPrompts, p]);
+    setNewPrompt({ category: "Writing", emoji: "✨", title: "", template: "" });
+  };
+
+  const deletePrompt = (id) => {
+    saveCustomPrompts(customPrompts.filter(p => p.id !== id));
+  };
+
+  const resetProgress = () => {
+    if (window.confirm("Reset all progress? This cannot be undone.")) {
+      saveProgress({});
+    }
+  };
+
+  if (loading) return (
+    <>
+      <style>{STYLES}</style>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", fontFamily: "'Nunito Sans', sans-serif", color: "var(--ink-muted)", background: "var(--cream)" }}>
+        Loading your progress…
+      </div>
+    </>
+  );
+
+  // ── LESSON DETAIL VIEW ──────────────────────────────────────────────────────
+  const LessonView = () => {
+    const lesson = selectedLesson;
+    const prog = progress[lesson.id] || {};
+    const isComplete = prog.completed;
+
+    return (
+      <div className="main">
+        <button className="back-btn" onClick={() => setView("lessons")}>← Back to Lessons</button>
+
+        <div className="lesson-detail-header">
+          <div className="breadcrumb">
+            <span className="breadcrumb-link" onClick={() => setView("lessons")}>Lessons</span>
+            <span>›</span>
+            <span className={`lesson-category-tag cat-${lesson.category}`}>{lesson.category}</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+            <span style={{ fontSize: 40 }}>{lesson.emoji}</span>
+            <div>
+              <div className="lesson-detail-title">{lesson.title}</div>
+              <div className="lesson-detail-desc">{lesson.description}</div>
+              <div className="lesson-detail-meta">
+                <span>⏱ {lesson.duration} read</span>
+                <span>📖 {lesson.steps.length} sections</span>
+                {isComplete && <span style={{ color: "var(--green)", fontWeight: 700 }}>✅ Completed</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Steps */}
+        <div style={{ marginBottom: 16, fontFamily: "'Fraunces', serif", fontSize: 18, fontWeight: 600, color: "var(--ink)" }}>Lesson Content</div>
+        <div className="steps-container">
+          {lesson.steps.map((step, i) => (
+            <div className="step-card" key={i}>
+              <div
+                className={`step-card-header ${openStep === i ? "active-step" : ""}`}
+                onClick={() => setOpenStep(openStep === i ? -1 : i)}
+              >
+                <div>
+                  <div className="step-num">Step {i + 1} of {lesson.steps.length}</div>
+                  <div className="step-card-title">{step.title}</div>
+                </div>
+                <div className={`step-chevron ${openStep === i ? "open" : ""}`}>▾</div>
+              </div>
+              <div className={`step-card-body ${openStep === i ? "open" : ""}`}>
+                <div className="step-content">{step.content}</div>
+                <div className="step-example">
+                  <div className="step-example-label">💡 Example</div>
+                  <pre>{step.example}</pre>
+                </div>
+                <div className="step-nav">
+                  {i > 0 && <button className="btn-sm btn-outline" onClick={() => setOpenStep(i - 1)}>← Previous</button>}
+                  {i < lesson.steps.length - 1 && <button className="btn-sm btn-primary" onClick={() => setOpenStep(i + 1)}>Next →</button>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Exercise */}
+        <div className="exercise-card">
+          <div className="exercise-label">✏️ Practice Exercise</div>
+          <div className="exercise-prompt">{lesson.exercise.prompt}</div>
+          <textarea
+            className="exercise-textarea"
+            placeholder={lesson.exercise.placeholder}
+            value={exerciseText}
+            onChange={e => setExerciseText(e.target.value)}
+          />
+          <div className="exercise-tip">💡 Tip: {lesson.exercise.tip}</div>
+        </div>
+
+        {/* Complete */}
+        <div className="complete-banner">
+          <div>
+            <h3>{isComplete ? "✅ Lesson Complete!" : "Ready to finish this lesson?"}</h3>
+            <p>{isComplete ? "You've completed this lesson. Take the quiz to test your knowledge." : "Mark it complete, then challenge yourself with the quiz."}</p>
+          </div>
+          <div className="complete-actions">
+            {!isComplete && (
+              <button className="btn-sm btn-primary" onClick={() => markComplete(lesson.id)}>
+                ✓ Mark Complete
+              </button>
+            )}
+            <button className="btn-sm btn-coral" onClick={() => openQuiz(lesson)}>
+              {prog.quizPassed ? "🏆 Retake Quiz" : "Take Quiz →"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── QUIZ VIEW ──────────────────────────────────────────────────────────────
+  const QuizView = () => {
+    const lesson = quizLesson;
+    const { current, answers, done, score, passed } = quizState;
+    const quiz = lesson.quiz;
+
+    if (done) {
+      const pct = Math.round((score / quiz.length) * 100);
+      return (
+        <div className="main">
+          <button className="back-btn" onClick={() => { setView("lesson"); setSelectedLesson(lesson); }}>← Back to Lesson</button>
+          <div className="quiz-wrap">
+            <div className="quiz-result">
+              <div className="result-emoji">{passed ? "🏆" : "📖"}</div>
+              <div className="result-title">{passed ? "Quiz Passed!" : "Keep Practicing"}</div>
+              <div className="result-score">{score}/{quiz.length}</div>
+              <div className="text-muted" style={{ fontSize: 15, marginBottom: 8 }}>{pct}% correct</div>
+              <div className="result-msg">
+                {passed
+                  ? "Excellent work! You've demonstrated a solid understanding of this lesson."
+                  : "No worries — review the lesson material and try again. Learning takes practice!"}
+              </div>
+              <div className="result-actions">
+                <button className="btn-lg btn-outline" style={{ border: "1.5px solid var(--border)" }} onClick={() => { setView("lesson"); setSelectedLesson(lesson); }}>
+                  Review Lesson
+                </button>
+                <button className="btn-lg btn-primary" onClick={() => setView("lessons")}>
+                  Browse More Lessons
+                </button>
+              </div>
+            </div>
+
+            {/* Review answers */}
+            <div style={{ marginTop: 28 }}>
+              <div className="section-title" style={{ marginBottom: 14 }}>Answer Review</div>
+              {quiz.map((q, i) => {
+                const isCorrect = answers[i] === q.answer;
+                return (
+                  <div key={i} style={{ background: "var(--white)", border: `1.5px solid ${isCorrect ? "#86efac" : "#fca5a5"}`, borderRadius: "var(--radius)", padding: "16px 20px", marginBottom: 12 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 8, color: "var(--ink)" }}>Q{i + 1}: {q.q}</div>
+                    <div style={{ fontSize: 13, color: isCorrect ? "var(--green)" : "var(--coral)", fontWeight: 600 }}>
+                      {isCorrect ? "✅ Correct" : `❌ You answered: "${q.options[answers[i]]}"`}
+                    </div>
+                    {!isCorrect && <div style={{ fontSize: 13, color: "var(--green)", marginTop: 4 }}>✓ Correct answer: "{q.options[q.answer]}"</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const q = quiz[current];
+    return (
+      <div className="main">
+        <button className="back-btn" onClick={() => { setView("lesson"); setSelectedLesson(lesson); }}>← Back to Lesson</button>
+        <div className="quiz-wrap">
+          <div className="quiz-header">
+            <div style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 700, marginBottom: 6 }}>
+              {lesson.emoji} {lesson.title} — Quiz
+            </div>
+            <div className="quiz-progress-bar">
+              <div className="quiz-progress-fill" style={{ width: `${((current) / quiz.length) * 100}%` }} />
+            </div>
+            <div className="quiz-counter">Question {current + 1} of {quiz.length}</div>
+          </div>
+
+          <div className="quiz-card">
+            <div className="quiz-q">{q.q}</div>
+            <div className="quiz-options">
+              {q.options.map((opt, i) => (
+                <button key={i} className="quiz-option" onClick={() => answerQuiz(i)}>
+                  <span style={{ marginRight: 10, fontWeight: 700, color: "var(--green)", opacity: .7 }}>{String.fromCharCode(65 + i)}.</span>
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── FILTERED LESSONS ────────────────────────────────────────────────────────
+  const filteredLessons = lessonFilter === "All" ? LESSONS : LESSONS.filter(l => l.category === lessonFilter);
+  const filteredPrompts = promptFilter === "All" ? allPrompts : allPrompts.filter(p => p.category === promptFilter);
+
+  // ── RENDER ──────────────────────────────────────────────────────────────────
+  return (
+    <>
+      <style>{STYLES}</style>
+
+      {/* Admin Login Modal */}
+      {showAdminModal && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <h3>🔐 Admin Access</h3>
+            <p>Enter the admin PIN to access lesson and content management. (Demo PIN: <strong>1234</strong>)</p>
+            <input
+              className="form-input"
+              type="password"
+              placeholder="Enter PIN..."
+              value={adminPin}
+              onChange={e => { setAdminPin(e.target.value); setPinError(false); }}
+              onKeyDown={e => e.key === "Enter" && handleAdminLogin()}
+              autoFocus
+            />
+            {pinError && <div style={{ color: "var(--coral)", fontSize: 13, marginTop: 8 }}>Incorrect PIN. Try 1234.</div>}
+            <div className="modal-actions">
+              <button className="btn-sm btn-outline" onClick={() => { setShowAdminModal(false); setAdminPin(""); setPinError(false); }}>Cancel</button>
+              <button className="btn-sm btn-amber" onClick={handleAdminLogin}>Login</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HEADER */}
+      <div className="header">
+        <div className="logo" onClick={() => setView("home")}>
+          <span className="logo-icon">🧠</span>
+          ChatGPT Basics
+        </div>
+        <nav className="nav">
+          {[["home","🏠 Home"],["lessons","📖 Lessons"],["prompts","📋 Prompts"]].map(([v,label]) => (
+            <button key={v} className={`nav-btn ${view === v ? "active" : ""}`} onClick={() => setView(v)}>{label}</button>
+          ))}
+          {isAdmin && (
+            <button className={`nav-btn ${view === "admin" ? "active" : ""}`} onClick={() => setView("admin")}>⚙️ Admin</button>
+          )}
+        </nav>
+        <div className="header-right">
+          {isAdmin ? (
+            <>
+              <span className="admin-badge">ADMIN</span>
+              <button className="btn-sm btn-outline" onClick={() => { setIsAdmin(false); setView("home"); }}>Exit Admin</button>
+            </>
+          ) : (
+            <button className="btn-sm btn-outline" onClick={() => setShowAdminModal(true)}>Admin Login</button>
+          )}
+        </div>
+      </div>
+
+      {/* HOME VIEW */}
+      {view === "home" && (
+        <div className="main">
+          <div className="hero">
+            <div className="hero-tag">Beginner Friendly</div>
+            <h1>Learn ChatGPT from<br/>the very beginning</h1>
+            <p>
+              {completedCount === 0
+                ? "No experience needed. Go from 'what is this?' to using AI with confidence — step by step."
+                : `You've completed ${completedCount} of ${LESSONS.length} lessons. Keep going!`}
+            </p>
+            <div className="hero-actions">
+              <button className="hero-btn hero-btn-white" onClick={() => setView("lessons")}>
+                {completedCount > 0 ? "Continue Learning →" : "Start Learning →"}
+              </button>
+              <button className="hero-btn hero-btn-ghost" onClick={() => setView("prompts")}>Browse Prompt Templates</button>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="stats-row">
+            <div className="stat-card">
+              <div className="stat-label">Progress</div>
+              <div className="stat-value">{pct}%</div>
+              <div className="stat-sub">{completedCount} of {LESSONS.length} lessons done</div>
+              <div className="progress-bar-wrap" style={{ marginTop: 12 }}>
+                <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Quizzes Passed</div>
+              <div className="stat-value" style={{ color: "var(--amber)" }}>{quizzedCount}</div>
+              <div className="stat-sub">of {LESSONS.length} total quizzes</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Prompt Templates</div>
+              <div className="stat-value" style={{ color: "var(--coral)" }}>{allPrompts.length}</div>
+              <div className="stat-sub">ready-to-copy templates</div>
+            </div>
+          </div>
+
+          {/* Featured by category */}
+          {CATEGORIES.filter(c => c !== "All").map(cat => {
+            const catLessons = LESSONS.filter(l => l.category === cat);
+            return (
+              <div key={cat} style={{ marginBottom: 32 }}>
+                <div className="section-header">
+                  <div className="section-title">{cat}</div>
+                  <button className="see-all" onClick={() => { setLessonFilter(cat); setView("lessons"); }}>See all →</button>
+                </div>
+                <div className="lessons-grid">
+                  {catLessons.slice(0, 3).map(lesson => <LessonCard key={lesson.id} lesson={lesson} prog={progress[lesson.id]} onClick={() => openLesson(lesson)} />)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* LESSONS VIEW */}
+      {view === "lessons" && (
+        <div className="main">
+          <div style={{ marginBottom: 24 }}>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 700, marginBottom: 6 }}>All Lessons</h2>
+            <p style={{ color: "var(--ink-muted)", fontSize: 15 }}>{LESSONS.length} lessons across {CATEGORIES.length - 1} topics</p>
+          </div>
+          <div className="cat-filter">
+            {CATEGORIES.map(c => (
+              <button key={c} className={`cat-filter-btn ${lessonFilter === c ? "active" : ""}`} onClick={() => setLessonFilter(c)}>{c}</button>
+            ))}
+          </div>
+          <div className="lessons-grid">
+            {filteredLessons.map(lesson => (
+              <LessonCard key={lesson.id} lesson={lesson} prog={progress[lesson.id]} onClick={() => openLesson(lesson)} />
+            ))}
+          </div>
+          {filteredLessons.length === 0 && (
+            <div className="empty">
+              <div className="empty-icon">📭</div>
+              <h3>No lessons in this category yet</h3>
+              <p>Check back soon, or browse another category.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* LESSON DETAIL */}
+      {view === "lesson" && selectedLesson && <LessonView />}
+
+      {/* QUIZ */}
+      {view === "quiz" && quizLesson && <QuizView />}
+
+      {/* PROMPTS VIEW */}
+      {view === "prompts" && (
+        <div className="main">
+          <div className="prompts-header">
+            <h2>📋 Prompt Library</h2>
+            <p>Ready-to-copy templates for common tasks. Click any template, customize the <span style={{ background: "var(--amber-pale)", padding: "1px 5px", borderRadius: 4, fontSize: 13, fontWeight: 600 }}>[bracketed]</span> parts, and paste into ChatGPT.</p>
+          </div>
+          <div className="cat-filter">
+            {PROMPT_CATS.map(c => (
+              <button key={c} className={`cat-filter-btn ${promptFilter === c ? "active" : ""}`} onClick={() => setPromptFilter(c)}>{c}</button>
+            ))}
+          </div>
+          <div className="prompts-grid">
+            {filteredPrompts.map(p => (
+              <div className="prompt-card" key={p.id}>
+                <div className="prompt-card-top">
+                  <span className="prompt-emoji">{p.emoji}</span>
+                  <span className="prompt-cat-tag">{p.category}</span>
+                </div>
+                <div className="prompt-title">{p.title}</div>
+                <div className="prompt-template">{p.template}</div>
+                <button
+                  className={`copy-btn ${copyFeedback === p.id ? "copied" : ""}`}
+                  onClick={() => copyTemplate(p.template, p.id)}
+                >
+                  {copyFeedback === p.id ? "✓ Copied!" : "⎘ Copy Template"}
+                </button>
+              </div>
+            ))}
+          </div>
+          {filteredPrompts.length === 0 && (
+            <div className="empty">
+              <div className="empty-icon">📋</div>
+              <h3>No templates in this category</h3>
+              <p>Try a different category or ask an admin to add more.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ADMIN VIEW */}
+      {view === "admin" && isAdmin && (
+        <div className="main">
+          <div className="admin-header">
+            <div>
+              <h2>⚙️ Admin Panel</h2>
+              <p style={{ fontSize: 13, color: "var(--ink-mid)", marginTop: 3 }}>Manage lessons, quizzes, and prompt templates</p>
+            </div>
+            <button className="btn-sm btn-outline" onClick={resetProgress}>🗑 Reset All Progress</button>
+          </div>
+
+          <div className="admin-tabs">
+            {[["lessons","📖 Lessons"],["prompts","📋 Prompts"],["progress","📊 Progress"]].map(([t,l]) => (
+              <button key={t} className={`admin-tab ${adminTab === t ? "active" : ""}`} onClick={() => setAdminTab(t)}>{l}</button>
+            ))}
+          </div>
+
+          {/* Lessons tab */}
+          {adminTab === "lessons" && (
+            <>
+              <div style={{ color: "var(--ink-muted)", fontSize: 14, marginBottom: 16 }}>
+                {LESSONS.length} built-in lessons are included. Lesson editing and creation is coming in a future update. You can manage quizzes and prompts below.
+              </div>
+              <div className="admin-list">
+                {LESSONS.map(lesson => {
+                  const prog = progress[lesson.id] || {};
+                  return (
+                    <div className="admin-list-item" key={lesson.id}>
+                      <div className="admin-item-info">
+                        <div className="admin-item-title">{lesson.emoji} {lesson.title}</div>
+                        <div className="admin-item-meta">
+                          <span className={`lesson-category-tag cat-${lesson.category}`} style={{ marginRight: 8 }}>{lesson.category}</span>
+                          {prog.completed && <span style={{ color: "var(--green)", fontWeight: 600, fontSize: 12 }}>✅ Completed</span>}
+                          {prog.quizPassed && <span style={{ color: "var(--amber)", fontWeight: 600, fontSize: 12, marginLeft: 8 }}>🏆 Quiz Passed ({prog.quizScore}/{prog.quizTotal})</span>}
+                        </div>
+                      </div>
+                      <button className="btn-sm btn-outline" onClick={() => openLesson(lesson)}>Preview</button>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {/* Prompts tab */}
+          {adminTab === "prompts" && (
+            <>
+              <div className="admin-form">
+                <div style={{ fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 600, marginBottom: 16 }}>➕ Add New Prompt Template</div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Category</label>
+                    <select className="form-select" value={newPrompt.category} onChange={e => setNewPrompt({ ...newPrompt, category: e.target.value })}>
+                      {["Writing","Learning","Work","Creative","Research"].map(c => <option key={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Emoji</label>
+                    <input className="form-input" value={newPrompt.emoji} onChange={e => setNewPrompt({ ...newPrompt, emoji: e.target.value })} placeholder="✨" />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Template Title</label>
+                  <input className="form-input" value={newPrompt.title} onChange={e => setNewPrompt({ ...newPrompt, title: e.target.value })} placeholder='e.g., "Summarize a Meeting"' />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Template Text (use [brackets] for fill-in-the-blank parts)</label>
+                  <textarea className="form-textarea" value={newPrompt.template} onChange={e => setNewPrompt({ ...newPrompt, template: e.target.value })} placeholder='e.g., "Summarize the following meeting notes into key decisions and action items:\n\n[paste meeting notes here]"' />
+                </div>
+                <button className="btn-sm btn-primary" onClick={addCustomPrompt}>Add Template</button>
+              </div>
+
+              <div style={{ fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 600, marginBottom: 14 }}>Custom Templates ({customPrompts.length})</div>
+              {customPrompts.length === 0 ? (
+                <div style={{ color: "var(--ink-muted)", fontSize: 14 }}>No custom templates yet. Add one above.</div>
+              ) : (
+                <div className="admin-list">
+                  {customPrompts.map(p => (
+                    <div className="admin-list-item" key={p.id}>
+                      <div className="admin-item-info">
+                        <div className="admin-item-title">{p.emoji} {p.title}</div>
+                        <div className="admin-item-meta">{p.category} · {p.template.slice(0, 60)}…</div>
+                      </div>
+                      <button className="delete-btn" onClick={() => deletePrompt(p.id)}>✕ Delete</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Progress tab */}
+          {adminTab === "progress" && (
+            <>
+              <div style={{ background: "var(--white)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 24, boxShadow: "var(--shadow)", marginBottom: 20 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+                  <div>
+                    <div className="stat-label">Lessons Completed</div>
+                    <div style={{ fontFamily: "'Fraunces', serif", fontSize: 32, fontWeight: 700, color: "var(--green)" }}>{completedCount}</div>
+                    <div style={{ fontSize: 13, color: "var(--ink-muted)" }}>of {LESSONS.length} total</div>
+                  </div>
+                  <div>
+                    <div className="stat-label">Quizzes Passed</div>
+                    <div style={{ fontFamily: "'Fraunces', serif", fontSize: 32, fontWeight: 700, color: "var(--amber)" }}>{quizzedCount}</div>
+                  </div>
+                  <div>
+                    <div className="stat-label">Overall Progress</div>
+                    <div style={{ fontFamily: "'Fraunces', serif", fontSize: 32, fontWeight: 700, color: "var(--coral)" }}>{pct}%</div>
+                  </div>
+                </div>
+              </div>
+              <div className="admin-list">
+                {LESSONS.map(lesson => {
+                  const prog = progress[lesson.id] || {};
+                  return (
+                    <div className="admin-list-item" key={lesson.id}>
+                      <div className="admin-item-info">
+                        <div className="admin-item-title">{lesson.emoji} {lesson.title}</div>
+                        <div className="admin-item-meta" style={{ display: "flex", gap: 12, marginTop: 4 }}>
+                          <span style={{ color: prog.completed ? "var(--green)" : "var(--ink-muted)" }}>
+                            {prog.completed ? "✅ Complete" : "○ Not started"}
+                          </span>
+                          <span style={{ color: prog.quizPassed ? "var(--amber)" : "var(--ink-muted)" }}>
+                            {prog.quizPassed ? `🏆 Quiz: ${prog.quizScore}/${prog.quizTotal}` : prog.quizScore !== undefined ? `❌ Quiz: ${prog.quizScore}/${prog.quizTotal}` : "Quiz: not taken"}
+                          </span>
+                          {prog.exerciseDone && <span style={{ color: "var(--green)" }}>✍️ Exercise done</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── LESSON CARD COMPONENT ────────────────────────────────────────────────────
+function LessonCard({ lesson, prog = {}, onClick }) {
+  return (
+    <div className="lesson-card" onClick={onClick}>
+      <div className="lesson-card-top">
+        <span className="lesson-emoji">{lesson.emoji}</span>
+        <span className={`lesson-category-tag cat-${lesson.category}`}>{lesson.category}</span>
+      </div>
+      <div className="lesson-title">{lesson.title}</div>
+      <div className="lesson-desc">{lesson.description}</div>
+      <div className="lesson-meta">
+        <span className="lesson-duration">⏱ {lesson.duration}</span>
+        <div className="lesson-status">
+          {prog.quizPassed
+            ? <span className="status-done">🏆 Passed</span>
+            : prog.completed
+              ? <span className="status-quiz">✅ Done · Take quiz →</span>
+              : <span style={{ color: "var(--green)", fontWeight: 600, fontSize: 12 }}>Start →</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
